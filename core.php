@@ -17,9 +17,9 @@ class WowArmory
         25 => 'pandaren'
 
     );
-
-    public $wow_host = "http://us.battle.net/static-render/us/";
-
+    
+    public $wow_host = "http://eu.battle.net/static-render/eu/";
+    
     public $wow_gender = array(
         0 => 'male',
         1 => 'female'
@@ -56,10 +56,9 @@ class WowArmory
 
     }
 
-
     public function getRenderData($realm = '', $charater = '')
     {
-        $url = 'http://us.battle.net/api/wow/character/' . $realm . '/' . $charater . '?fields=appearance,items';
+        $url = 'http://eu.battle.net/api/wow/character/' . $realm . '/' . $charater . '?fields=appearance,items';
         $ch = curl_init($url);
 
         $timeout = 5;
@@ -78,37 +77,46 @@ class WowArmory
 
         $render = array(
             'head' => '',
+            'neck' => '',
             'shoulder' => '',
             'back' => '',
             'chest' => '',
-            'waist' => '',
+            'shirt' => '',
+            'tabard' => '',
             'wrist' => '',
             'hands' => '',
+            'waist' => '',
             'legs' => '',
             'feet' => '',
             'mainHand' => '',
             'offHand' => ''
+            
         );
         if (property_exists($data->items, 'head'))
             $render['head'] = $this->getDisplayId($data->items->head);
+        if (property_exists($data->items, 'neck'))
+            $render['neck'] = $this->getDisplayId($data->items->neck);
         if (property_exists($data->items, 'shoulder'))
             $render['shoulder'] = $this->getDisplayId($data->items->shoulder);
         if (property_exists($data->items, 'back'))
             $render['back'] = $this->getDisplayId($data->items->back);
-        if (property_exists($data->items, 'chest')) {
+        if (property_exists($data->items, 'chest'))
             $render['chest'] = $this->getDisplayId($data->items->chest);
-        }
-        if (property_exists($data->items, 'waist'))
-            $render['waist'] = $this->getDisplayId($data->items->waist);
+        if (property_exists($data->items, 'shirt'))
+            $render['shirt'] = $this->getDisplayId($data->items->shirt);
+        if (property_exists($data->items, 'tabard'))
+            $render['tabard'] = $this->getDisplayId($data->items->tabard);
         if (property_exists($data->items, 'wrist'))
             $render['wrist'] = $this->getDisplayId($data->items->wrist);
         if (property_exists($data->items, 'hands'))
             $render['hands'] = $this->getDisplayId($data->items->hands);
+        if (property_exists($data->items, 'waist'))
+            $render['waist'] = $this->getDisplayId($data->items->waist);
         if (property_exists($data->items, 'legs'))
             $render['legs'] = $this->getDisplayId($data->items->legs);
         if (property_exists($data->items, 'feet'))
             $render['feet'] = $this->getDisplayId($data->items->feet);
-        if (property_exists($data->items, 'mainHand'))
+		if (property_exists($data->items, 'mainHand'))
             $render['mainHand'] = $this->getDisplayId($data->items->mainHand);
         if (property_exists($data->items, 'offHand'))
             $render['offHand'] = $this->getDisplayId($data->items->offHand);
@@ -142,4 +150,3 @@ class WowArmory
     }
 
 }
-

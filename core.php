@@ -92,13 +92,13 @@ class WowArmory
             'offHand' => ''
             
         );
-        if (property_exists($data->items, 'head'))
+        if (property_exists($data->items, 'head') && $data->appearance->showHelm)
             $render['head'] = $this->getDisplayId($data->items->head);
         if (property_exists($data->items, 'neck'))
             $render['neck'] = $this->getDisplayId($data->items->neck);
         if (property_exists($data->items, 'shoulder'))
             $render['shoulder'] = $this->getDisplayId($data->items->shoulder);
-        if (property_exists($data->items, 'back'))
+        if (property_exists($data->items, 'back') && $data->appearance->showCloak)
             $render['back'] = $this->getDisplayId($data->items->back);
         if (property_exists($data->items, 'chest'))
             $render['chest'] = $this->getDisplayId($data->items->chest);

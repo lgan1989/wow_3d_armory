@@ -1,9 +1,3 @@
-WoW 3D Armory
-=============
+World Of Warcraft PHP 3D Model Viewer
 
-PHP code that generate up to date wow character 3D model view.
-
-==============
-Usage:
-
-Put these two files under your webroot, and it should be good to run.
+Test version

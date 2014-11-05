@@ -11,30 +11,30 @@ $renderData = $wowArmory->getRenderData($realm , $name);
 
  <head>
  	<title>WoW Model Viewer</title>
--	
-+	<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+	
+	<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
  	<style>body {background: black;}</style>
-+	<script>
-+	$(document).ready(function() {
-+		var is_hd = true;
-+	
-+	$('.hdmodel').change(function() { is_hd = $(this).val(); change_quality(); });
-+	
-+		function change_quality() {
-+		var obj = $('object:first');
-+		var container = $(obj).parent();
-+		var flashvars = $('param[name=\'flashvars\']').attr('value');
-+		if(is_hd == 'true') {
-+			flashvars = flashvars.replace('hd=false', 'hd=true');
-+			} else {
-+			flashvars = flashvars.replace('hd=true', 'hd=false');}
-+
-+	$('param[name=\'flashvars\']').attr('value', flashvars);
-+		var newobj = $(obj).clone();
-+	$(obj).remove();
-+	$(container).append( newobj ); } });
-+	</script>
-+	
+	<script>
+	$(document).ready(function() {
+		var is_hd = true;
+	
+	$('.hdmodel').change(function() { is_hd = $(this).val(); change_quality(); });
+	
+		function change_quality() {
+		var obj = $('object:first');
+		var container = $(obj).parent();
+		var flashvars = $('param[name=\'flashvars\']').attr('value');
+		if(is_hd == 'true') {
+			flashvars = flashvars.replace('hd=false', 'hd=true');
+			} else {
+			flashvars = flashvars.replace('hd=true', 'hd=false');}
+
+	$('param[name=\'flashvars\']').attr('value', flashvars);
+		var newobj = $(obj).clone();
+	$(obj).remove();
+	$(container).append( newobj ); } });
+	</script>
+	
  </head>
 
 <body>

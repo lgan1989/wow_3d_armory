@@ -1,6 +1,14 @@
-<?php
+<?php 
 class WowArmory 
 {
+
+    private $region = 'us';
+
+    public function __construct($region = 'us')
+    {
+        $this->region = $region;
+    }
+
     public $wow_race = array(
         1 => 'human',
         2 => 'orc',
@@ -17,8 +25,6 @@ class WowArmory
         25 => 'pandaren'
 
     );
-    
-    public $wow_host = "http://eu.battle.net/static-render/eu/";
     
     public $wow_gender = array(
         0 => 'male',
@@ -40,7 +46,7 @@ class WowArmory
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_VERBOSE, 1);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.66 Safari/537.36');
         $response = curl_exec($ch);
         $p = xml_parser_create();
         xml_parse_into_struct($p, $response, $vals, $index);
@@ -58,7 +64,7 @@ class WowArmory
 
     public function getRenderData($realm = '', $charater = '')
     {
-        $url = 'http://eu.battle.net/api/wow/character/' . $realm . '/' . $charater . '?fields=appearance,items';
+        $url = 'http://'.$this->region.'.battle.net/api/wow/character/' . $realm . '/' . $charater . '?fields=appearance,items';
         $ch = curl_init($url);
 
         $timeout = 5;
@@ -66,7 +72,7 @@ class WowArmory
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_VERBOSE, 1);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.66 Safari/537.36');
 
         $response = curl_exec($ch);
         $data = json_decode($response);
@@ -77,7 +83,6 @@ class WowArmory
 
         $render = array(
             'head' => '',
-            'neck' => '',
             'shoulder' => '',
             'back' => '',
             'chest' => '',
@@ -93,33 +98,31 @@ class WowArmory
             
         );
         if (property_exists($data->items, 'head') && $data->appearance->showHelm)
-            $render['head'] = $this->getDisplayId($data->items->head);
-        if (property_exists($data->items, 'neck'))
-            $render['neck'] = $this->getDisplayId($data->items->neck);
+            $render['head'] = $this->getDisplayId($data->items->head); #голова 
         if (property_exists($data->items, 'shoulder'))
-            $render['shoulder'] = $this->getDisplayId($data->items->shoulder);
+            $render['shoulder'] = $this->getDisplayId($data->items->shoulder); #Плечи 
         if (property_exists($data->items, 'back') && $data->appearance->showCloak)
-            $render['back'] = $this->getDisplayId($data->items->back);
+            $render['back'] = $this->getDisplayId($data->items->back); #спина
         if (property_exists($data->items, 'chest'))
-            $render['chest'] = $this->getDisplayId($data->items->chest);
+            $render['chest'] = $this->getDisplayId($data->items->chest); #грудь
         if (property_exists($data->items, 'shirt'))
-            $render['shirt'] = $this->getDisplayId($data->items->shirt);
+            $render['shirt'] = $this->getDisplayId($data->items->shirt); #рубашка
         if (property_exists($data->items, 'tabard'))
-            $render['tabard'] = $this->getDisplayId($data->items->tabard);
+            $render['tabard'] = $this->getDisplayId($data->items->tabard); #накидка
         if (property_exists($data->items, 'wrist'))
-            $render['wrist'] = $this->getDisplayId($data->items->wrist);
+            $render['wrist'] = $this->getDisplayId($data->items->wrist); #брасы
         if (property_exists($data->items, 'hands'))
-            $render['hands'] = $this->getDisplayId($data->items->hands);
+            $render['hands'] = $this->getDisplayId($data->items->hands); #руки
         if (property_exists($data->items, 'waist'))
-            $render['waist'] = $this->getDisplayId($data->items->waist);
+            $render['waist'] = $this->getDisplayId($data->items->waist); #пояс
         if (property_exists($data->items, 'legs'))
-            $render['legs'] = $this->getDisplayId($data->items->legs);
+            $render['legs'] = $this->getDisplayId($data->items->legs); #штаны
         if (property_exists($data->items, 'feet'))
-            $render['feet'] = $this->getDisplayId($data->items->feet);
+            $render['feet'] = $this->getDisplayId($data->items->feet); #боты
 		if (property_exists($data->items, 'mainHand'))
-            $render['mainHand'] = $this->getDisplayId($data->items->mainHand);
+            $render['mainHand'] = $this->getDisplayId($data->items->mainHand); #пуха
         if (property_exists($data->items, 'offHand'))
-            $render['offHand'] = $this->getDisplayId($data->items->offHand);
+            $render['offHand'] = $this->getDisplayId($data->items->offHand); #офф хэнд
 
         curl_close($ch);
 

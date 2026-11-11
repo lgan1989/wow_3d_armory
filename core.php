@@ -32,13 +32,20 @@ class WowArmory
     );
     public function getDisplayId($item)
     {
-        if ($item == null)
-            return;
-        if (property_exists($item, 'tooltipParams') && property_exists($item->tooltipParams, 'transmogItem')) {
-            $id = $item->tooltipParams->transmogItem;
-        } else $id = $item->id;
-        $url = 'http://www.wowhead.com/item=' . $id . '&xml';
+        if ($item === null || !is_object($item)) {
+            return '';
+        }
 
+        $tooltipParams = isset($item->tooltipParams) ? $item->tooltipParams : null;
+        if (is_object($tooltipParams) && property_exists($tooltipParams, 'transmogItem') && !empty($tooltipParams->transmogItem)) {
+            $id = $tooltipParams->transmogItem;
+        } elseif (isset($item->id)) {
+            $id = $item->id;
+        } else {
+            return '';
+        }
+
+        $url = 'http://www.wowhead.com/item=' . $id . '&xml';
         $ch = curl_init($url);
         $timeout = 5;
 
@@ -47,24 +54,65 @@ class WowArmory
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_VERBOSE, 1);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.66 Safari/537.36');
+
         $response = curl_exec($ch);
+        curl_close($ch);
+
+        if ($response === false) {
+            return '';
+        }
+
         $p = xml_parser_create();
-        xml_parse_into_struct($p, $response, $vals, $index);
+        $vals = array();
+        $index = array();
+        if (!xml_parse_into_struct($p, $response, $vals, $index)) {
+            xml_parser_free($p);
+            return '';
+        }
         xml_parser_free($p);
 
+        $jsonIndex = isset($index['JSON'][0]) ? $index['JSON'][0] : null;
+        if ($jsonIndex === null || !isset($vals[$jsonIndex]['value'])) {
+            return '';
+        }
 
-        $position = strstr(strstr($vals[$index['JSON'][0]]['value'], 'slotbak":'), ',', true);
-        $position = substr(strstr($position, ':'), 1);
+        $slotPos = strpos($vals[$jsonIndex]['value'], 'slotbak":');
+        if ($slotPos === false) {
+            return '';
+        }
+
+        $slotInfo = strstr(substr($vals[$jsonIndex]['value'], $slotPos), ',', true);
+        if ($slotInfo === false) {
+            return '';
+        }
+
+        $position = substr(strstr($slotInfo, ':'), 1);
         $position = trim($position);
 
+        $iconIndex = isset($index['ICON'][0]) ? $index['ICON'][0] : null;
+        if ($iconIndex === null || !isset($vals[$iconIndex]['attributes']['DISPLAYID'])) {
+            return $position;
+        }
 
-        return $position . ',' . $vals[$index['ICON'][0]]['attributes']['DISPLAYID'];
-
+        return $position . ',' . $vals[$iconIndex]['attributes']['DISPLAYID'];
     }
 
     public function getRenderData($realm = '', $charater = '')
     {
-        $url = 'http://'.$this->region.'.battle.net/api/wow/character/' . $realm . '/' . $charater . '?fields=appearance,items';
+        if (empty($realm) || empty($charater)) {
+            return array(
+                'thumbnail' => '',
+                'face' => '',
+                'skin' => '',
+                'hairv' => '',
+                'hairc' => '',
+                'feature' => '',
+                'appearance' => '',
+                'racegender' => ''
+            );
+        }
+
+        $url = 'http://' . $this->region . '.battle.net/api/wow/character/' . $realm . '/' . $charater . '?fields=appearance,items';
         $ch = curl_init($url);
 
         $timeout = 5;
@@ -75,11 +123,40 @@ class WowArmory
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.66 Safari/537.36');
 
         $response = curl_exec($ch);
+        curl_close($ch);
+
+        if ($response === false) {
+            return array(
+                'thumbnail' => '',
+                'face' => '',
+                'skin' => '',
+                'hairv' => '',
+                'hairc' => '',
+                'feature' => '',
+                'appearance' => '',
+                'racegender' => ''
+            );
+        }
+
         $data = json_decode($response);
+        if (!is_object($data)) {
+            return array(
+                'thumbnail' => '',
+                'face' => '',
+                'skin' => '',
+                'hairv' => '',
+                'hairc' => '',
+                'feature' => '',
+                'appearance' => '',
+                'racegender' => ''
+            );
+        }
 
-        $race = $data->race;
-        $gender = $data->gender;
+        $items = isset($data->items) && is_object($data->items) ? $data->items : new stdClass();
+        $appearance = isset($data->appearance) && is_object($data->appearance) ? $data->appearance : new stdClass();
 
+        $race = isset($data->race) ? (int)$data->race : null;
+        $gender = isset($data->gender) ? (int)$data->gender : null;
 
         $render = array(
             'head' => '',
@@ -95,60 +172,76 @@ class WowArmory
             'feet' => '',
             'mainHand' => '',
             'offHand' => ''
-            
         );
-        if (property_exists($data->items, 'head') && $data->appearance->showHelm)
-            $render['head'] = $this->getDisplayId($data->items->head); #голова 
-        if (property_exists($data->items, 'shoulder'))
-            $render['shoulder'] = $this->getDisplayId($data->items->shoulder); #Плечи 
-        if (property_exists($data->items, 'back') && $data->appearance->showCloak)
-            $render['back'] = $this->getDisplayId($data->items->back); #спина
-        if (property_exists($data->items, 'chest'))
-            $render['chest'] = $this->getDisplayId($data->items->chest); #грудь
-        if (property_exists($data->items, 'shirt'))
-            $render['shirt'] = $this->getDisplayId($data->items->shirt); #рубашка
-        if (property_exists($data->items, 'tabard'))
-            $render['tabard'] = $this->getDisplayId($data->items->tabard); #накидка
-        if (property_exists($data->items, 'wrist'))
-            $render['wrist'] = $this->getDisplayId($data->items->wrist); #брасы
-        if (property_exists($data->items, 'hands'))
-            $render['hands'] = $this->getDisplayId($data->items->hands); #руки
-        if (property_exists($data->items, 'waist'))
-            $render['waist'] = $this->getDisplayId($data->items->waist); #пояс
-        if (property_exists($data->items, 'legs'))
-            $render['legs'] = $this->getDisplayId($data->items->legs); #штаны
-        if (property_exists($data->items, 'feet'))
-            $render['feet'] = $this->getDisplayId($data->items->feet); #боты
-		if (property_exists($data->items, 'mainHand'))
-            $render['mainHand'] = $this->getDisplayId($data->items->mainHand); #пуха
-        if (property_exists($data->items, 'offHand'))
-            $render['offHand'] = $this->getDisplayId($data->items->offHand); #офф хэнд
 
-        curl_close($ch);
+        if (isset($items->head) && !empty($appearance->showHelm)) {
+            $render['head'] = $this->getDisplayId($items->head);
+        }
+        if (isset($items->shoulder)) {
+            $render['shoulder'] = $this->getDisplayId($items->shoulder);
+        }
+        if (isset($items->back) && !empty($appearance->showCloak)) {
+            $render['back'] = $this->getDisplayId($items->back);
+        }
+        if (isset($items->chest)) {
+            $render['chest'] = $this->getDisplayId($items->chest);
+        }
+        if (isset($items->shirt)) {
+            $render['shirt'] = $this->getDisplayId($items->shirt);
+        }
+        if (isset($items->tabard)) {
+            $render['tabard'] = $this->getDisplayId($items->tabard);
+        }
+        if (isset($items->wrist)) {
+            $render['wrist'] = $this->getDisplayId($items->wrist);
+        }
+        if (isset($items->hands)) {
+            $render['hands'] = $this->getDisplayId($items->hands);
+        }
+        if (isset($items->waist)) {
+            $render['waist'] = $this->getDisplayId($items->waist);
+        }
+        if (isset($items->legs)) {
+            $render['legs'] = $this->getDisplayId($items->legs);
+        }
+        if (isset($items->feet)) {
+            $render['feet'] = $this->getDisplayId($items->feet);
+        }
+        if (isset($items->mainHand)) {
+            $render['mainHand'] = $this->getDisplayId($items->mainHand);
+        }
+        if (isset($items->offHand)) {
+            $render['offHand'] = $this->getDisplayId($items->offHand);
+        }
 
         $renderString = '';
         foreach ($render as $renderItem) {
-            if ($renderItem)
+            if ($renderItem) {
                 $renderString .= ',' . $renderItem;
+            }
         }
 
-
-        $renderData['thumbnail'] = $data->thumbnail;
-        $renderData['face'] = $data->appearance->faceVariation;
-        $renderData['skin'] = $data->appearance->skinColor;
-        $renderData['hairv'] = $data->appearance->hairVariation;
-        $renderData['hairc'] = $data->appearance->hairColor;
-        $renderData['feature'] = $data->appearance->featureVariation;
+        $renderData = array();
+        $renderData['thumbnail'] = isset($data->thumbnail) ? $data->thumbnail : '';
+        $renderData['face'] = isset($appearance->faceVariation) ? $appearance->faceVariation : '';
+        $renderData['skin'] = isset($appearance->skinColor) ? $appearance->skinColor : '';
+        $renderData['hairv'] = isset($appearance->hairVariation) ? $appearance->hairVariation : '';
+        $renderData['hairc'] = isset($appearance->hairColor) ? $appearance->hairColor : '';
+        $renderData['feature'] = isset($appearance->featureVariation) ? $appearance->featureVariation : '';
 
         $renderData['appearance'] = substr($renderString, 1, strlen($renderString) - 1) .
-        '&sk='.$renderData['skin'].
-        '&ha='.$renderData['hairv'].
-        '&hc='.$renderData['hairc'].
-        '&fa='.$renderData['face'].
-        '&fh='.$renderData['feature'].
-        '&fc='.$renderData['feature'].
-        '&mode=3';
-        $renderData['racegender'] = $this->wow_race[$data->race] . $this->wow_gender[$data->gender];
+            '&sk=' . $renderData['skin'] .
+            '&ha=' . $renderData['hairv'] .
+            '&hc=' . $renderData['hairc'] .
+            '&fa=' . $renderData['face'] .
+            '&fh=' . $renderData['feature'] .
+            '&fc=' . $renderData['feature'] .
+            '&mode=3';
+
+        $raceName = isset($this->wow_race[$race]) ? $this->wow_race[$race] : '';
+        $genderName = isset($this->wow_gender[$gender]) ? $this->wow_gender[$gender] : '';
+        $renderData['racegender'] = $raceName . $genderName;
+
         return $renderData;
     }
 
